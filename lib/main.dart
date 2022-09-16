@@ -115,17 +115,12 @@ class _MyHomePageState extends State<MyHomePage> {
                 //   height: 16.0,
                 // ),
                 if (_cameraImage != null)
-                  Image.file(_cameraImage!)
-                else
-                  Text(
-                    "Click on Pick Image to select an Image",
-                    style: TextStyle(fontSize: 18.0),
-                  ),
+                  Image.file(_cameraImage!),
                 ElevatedButton(
                   onPressed: () {
                     _pickImageFromCamera();
                   },
-                  child: Text("Pick Image From Camera"),
+                  child: Text("Image From Camera"),
                 ),
                 // if (_video != null)
                 //   _videoPlayerController.value.isInitialized
@@ -152,17 +147,12 @@ class _MyHomePageState extends State<MyHomePage> {
                     _cameraVideoPlayerController.value.aspectRatio,
                     child: VideoPlayer(_cameraVideoPlayerController),
                   )
-                      : Container()
-                else
-                  Text(
-                    "Click on Pick Video to select video",
-                    style: TextStyle(fontSize: 18.0),
-                  ),
+                      : Container(),
                 ElevatedButton(
                   onPressed: () {
                     _pickVideoFromCamera();
                   },
-                  child: Text("Pick Video From Camera"),
+                  child: Text("Video From Camera"),
                 )
               ],
             ),
