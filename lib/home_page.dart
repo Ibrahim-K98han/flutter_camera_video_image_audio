@@ -1,156 +1,126 @@
+import 'dart:convert';
 import 'dart:io';
+
+import 'package:camera/firebase_api.dart';
+import 'package:file_picker/file_picker.dart';
+import 'package:firebase_storage/firebase_storage.dart';
+import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:video_player/video_player.dart';
 
-class HomePage extends StatefulWidget {
-  const HomePage({Key? key}) : super(key: key);
+class MyHomePage extends StatefulWidget {
+  const MyHomePage({super.key});
 
   @override
-  State<HomePage> createState() => _HomePageState();
+  _MyHomePageState createState() => _MyHomePageState();
 }
 
-class _HomePageState extends State<HomePage> {
-  // String? _imagePath;
-  // ImageSource _imageSource = ImageSource.camera;
-
-  File _image;
-  late File _cameraImage;
-  late File _video;
-  late File _cameraVideo;
-
+class _MyHomePageState extends State<MyHomePage> {
+  late bool start;
+  File? _cameraVideo;
   ImagePicker picker = ImagePicker();
-
-  late final VideoPlayerController _videoPlayerController;
   late VideoPlayerController _cameraVideoPlayerController;
 
-  // This funcion will helps you to pick and Image from Gallery
-  _pickImageFromGallery() async {
-    PickedFile? pickedFile =
-    await picker.getImage(source: ImageSource.gallery, imageQuality: 50);
-
-    File image = File(pickedFile!.path);
-
-    setState(() {
-      _image = image;
-    });
-  }
-
-  // This funcion will helps you to pick and Image from Camera
-  _pickImageFromCamera() async {
-    PickedFile? pickedFile =
-    await picker.getImage(source: ImageSource.camera, imageQuality: 50);
-
-    File image = File(pickedFile!.path);
-
-    setState(() {
-      _cameraImage = image;
-    });
-  }
-
-  // This funcion will helps you to pick a Video File
-  void _pickVideo() async {
-    PickedFile? pickedFile = await picker.getVideo(source: ImageSource.gallery);
-
-    _video = File(pickedFile!.path);
-
-    _videoPlayerController = VideoPlayerController.file(_video)
+  void _pickVideoFromCamera() async {
+    PickedFile? pickedFile = await picker.getVideo(source: ImageSource.camera);
+    _cameraVideo = File(pickedFile!.path);
+    _cameraVideoPlayerController = VideoPlayerController.file(_cameraVideo!)
       ..initialize().then((_) {
         setState(() {});
-        _videoPlayerController.play();
+        _cameraVideoPlayerController.play();
       });
   }
 
-  // This funcion will helps you to pick a Video File from Camera
-  _pickVideoFromCamera() async {
-    PickedFile? pickedFile = await picker.getVideo(source: ImageSource.camera);
-
-    _cameraVideo = File(pickedFile!.path);
-
-    // _cameraVideoPlayerController = VideoPlayerController.file(_cameraVideo)
-    //   ..initialize().then((_) {
-    //     setState(() {});
-    //     _cameraVideoPlayerController.play();
-    //   });
+  void _stop() async {
+    _cameraVideoPlayerController = VideoPlayerController.file(_cameraVideo!)
+      ..initialize().then((_) {
+        setState(() {});
+        _cameraVideoPlayerController.pause();
+      });
   }
-
+  // void _pickVideoFromCameraStart() async {
+  //   _cameraVideoPlayerController = VideoPlayerController.file(_cameraVideo!)
+  //     ..initialize().then((_) {
+  //       setState(() {});
+  //       _cameraVideoPlayerController.play();
+  //     });
+  // }
+  UploadTask? task;
+  File? file;
   @override
   Widget build(BuildContext context) {
+    final fileName = file !=null? base64: 'No File';
     return Scaffold(
       appBar: AppBar(
-        title: Text("Image / Video Picker"),
+        title: Text("Video Picker"),
       ),
       body: SingleChildScrollView(
         child: Center(
           child: Container(
             padding: const EdgeInsets.all(16.0),
             child: Column(
-              children: <Widget>[
-                // if (_image != null)
-                //   Image.file(_image)
-                // else
-                  Text(
-                    "Click on Pick Image to select an Image",
-                    style: TextStyle(fontSize: 18.0),
-                  ),
-                ElevatedButton(
-                  onPressed: () {
-                    _pickImageFromGallery();
-                  },
-                  child: Text("Pick Image From Gallery"),
-                ),
-                SizedBox(
-                  height: 16.0,
-                ),
-                if (_cameraImage == null)
-                  Image.file(_cameraImage)
-                else
-                  Text(
-                    "Click on Pick Image to select an Image",
-                    style: TextStyle(fontSize: 18.0),
-                  ),
-                ElevatedButton(
-                  onPressed: () {
-                    _pickImageFromCamera();
-                  },
-                  child: Text("Pick Image From Camera"),
-                ),
-                if (_video != null)
-                  _videoPlayerController.value.isPlaying
-                      ? AspectRatio(
-                    aspectRatio: _videoPlayerController.value.aspectRatio,
-                    child: VideoPlayer(_videoPlayerController),
-                  )
-                      : Container()
-                else
-                  Text(
-                    "Click on Pick Video to select video",
-                    style: TextStyle(fontSize: 18.0),
-                  ),
-                ElevatedButton(
-                  onPressed: () {
-                    _pickVideo();
-                  },
-                  child: Text("Pick Video From Gallery"),
-                ),
+              children: [
                 if (_cameraVideo != null)
-                  _cameraVideoPlayerController.value.isPlaying
-                      ? AspectRatio(
-                    aspectRatio:
-                    _cameraVideoPlayerController.value.aspectRatio,
-                    child: VideoPlayer(_cameraVideoPlayerController),
-                  )
-                      : Container()
-                else
-                  Text(
-                    "Click on Pick Video to select video",
-                    style: TextStyle(fontSize: 18.0),
+                  _cameraVideoPlayerController.value.isInitialized
+                      ? Container(
+                    height: 400,
+                    width: 350,
+                        child: AspectRatio(
+                            aspectRatio:
+                                _cameraVideoPlayerController.value.aspectRatio,
+                            child: VideoPlayer(_cameraVideoPlayerController),
+                          ),
+                      )
+                      : Container(),
+                SizedBox(height: 20,),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    ElevatedButton(
+                      onPressed: () {
+                        _pickVideoFromCamera();
+                      },
+                      child: Text("Start"),
+                    ),
+                    SizedBox(
+                      width: 10,
+                    ),
+                    ElevatedButton(
+                      onPressed: () {
+                        _stop();
+                      },
+                      child: Text("Stop"),
+                    ),
+                  ],
+                ),
+                Center(
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      ElevatedButton(
+                        onPressed: selectFile,
+                        child: Text("File"),
+                      ),
+                      // Text(
+                      //   '$fileName',
+                      //   style: TextStyle(fontSize: 16),
+                      // ),
+                      SizedBox(
+                        width: 10,
+                      ),
+                      ElevatedButton(
+                        onPressed: uploadFile,
+                        child: Text("Upload"),
+                      ),
+                      SizedBox(
+                        width: 10,
+                      ),
+                      task !=null ? buildUploadStatus(task!):Container(
+
+                      ),
+                    ],
                   ),
-                ElevatedButton(
-                  onPressed: () {
-                    _pickVideoFromCamera();
-                  },
-                  child: Text("Pick Video From Camera"),
                 )
               ],
             ),
@@ -160,4 +130,46 @@ class _HomePageState extends State<HomePage> {
     );
   }
 
+  Future uploadFile() async{
+    if(file == null) return;
+    final fileName = base64;
+    final destinaiton = 'files/$fileName';
+    task = FirebaseApi.uploadFile(destinaiton, file!);
+    setState(() {
+
+    });
+    if(task == null)return;
+    final snapshot = await task!.whenComplete((){});
+    final urlDownload = await snapshot.ref.getDownloadURL();
+    print('Download-link $urlDownload');
+    Text(
+      '$urlDownload',
+      style: TextStyle(fontSize: 20),
+    );
   }
+
+  Future selectFile() async{
+    final result = await FilePicker.platform.pickFiles();
+    if(result == null) return;
+    final path = result.files.single.path;
+    setState(() => file = File(path!));
+  }
+
+  buildUploadStatus(UploadTask task) => StreamBuilder<TaskSnapshot>(
+    stream: task.snapshotEvents,
+    builder: (context, snapshot){
+      if(snapshot.hasData){
+        final snap = snapshot.data!;
+        final progress = snap.bytesTransferred / snap.totalBytes;
+        final percentage = (progress * 100).toStringAsFixed(2);
+        return Text(
+          '$percentage %',
+          style: TextStyle(fontSize: 20),
+        );
+      }else{
+        return Container();
+      }
+    }
+  );
+
+}
