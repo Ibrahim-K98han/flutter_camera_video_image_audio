@@ -22,7 +22,7 @@ class _MyHomePageState extends State<MyHomePage> {
   ImagePicker picker = ImagePicker();
   late VideoPlayerController _cameraVideoPlayerController;
 
-  void _pickVideoFromCamera() async {
+  Future pickVideoFromCamera() async {
     PickedFile? pickedFile = await picker.getVideo(source: ImageSource.camera);
     _cameraVideo = File(pickedFile!.path);
     _cameraVideoPlayerController = VideoPlayerController.file(_cameraVideo!)
@@ -30,6 +30,12 @@ class _MyHomePageState extends State<MyHomePage> {
         setState(() {});
         _cameraVideoPlayerController.play();
       });
+  }
+
+  @override
+  void dispose(){
+    _cameraVideoPlayerController.dispose();
+    super.dispose();
   }
 
   void _stop() async {
@@ -50,7 +56,6 @@ class _MyHomePageState extends State<MyHomePage> {
   File? file;
   @override
   Widget build(BuildContext context) {
-    final fileName = file !=null? base64: 'No File';
     return Scaffold(
       appBar: AppBar(
         title: Text("Video Picker"),
@@ -79,7 +84,7 @@ class _MyHomePageState extends State<MyHomePage> {
                   children: [
                     ElevatedButton(
                       onPressed: () {
-                        _pickVideoFromCamera();
+                        pickVideoFromCamera();
                       },
                       child: Text("Start"),
                     ),
@@ -102,10 +107,6 @@ class _MyHomePageState extends State<MyHomePage> {
                         onPressed: selectFile,
                         child: Text("File"),
                       ),
-                      // Text(
-                      //   '$fileName',
-                      //   style: TextStyle(fontSize: 16),
-                      // ),
                       SizedBox(
                         width: 10,
                       ),
@@ -131,10 +132,10 @@ class _MyHomePageState extends State<MyHomePage> {
   }
 
   Future uploadFile() async{
-    if(file == null) return;
+    if(_cameraVideo == null) return;
     final fileName = base64;
     final destinaiton = 'files/$fileName';
-    task = FirebaseApi.uploadFile(destinaiton, file!);
+    task = FirebaseApi.uploadFile(destinaiton, _cameraVideo!);
     setState(() {
 
     });
@@ -149,7 +150,7 @@ class _MyHomePageState extends State<MyHomePage> {
   }
 
   Future selectFile() async{
-    final result = await FilePicker.platform.pickFiles();
+    final result = await FilePicker.platform.pickFiles(allowMultiple: true);
     if(result == null) return;
     final path = result.files.single.path;
     setState(() => file = File(path!));
